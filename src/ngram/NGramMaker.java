@@ -26,25 +26,28 @@ public class NGramMaker {
 	public void readAll(String table, String column, int n) {
 		String tableName = prepareTable(column, n);
 		String insertSql = prepareInsertSql(tableName, n);
-		String selectSql = "SELECT " + column + " FROM " + table;
+		String selectSql = "SELECT " + column + " FROM " + table + "";
 		Statement s = null;
 		ResultSet rs = null;
 		try {
 			s = Database.createStreamingStatement(selectConnection);
 			rs = s.executeQuery(selectSql);
 			// Store the n grams in the counter object
-			Counter<String> ngrams = null;
+			Counter<String> ngrams = new Counter<String>();
 			String text = null;
 			while (rs.next()) {
-				ngrams = new Counter<String>();
 				text = rs.getString(1);
 				// Go through the text, ignoring english stopwords.
 				for (final String ngram : new NGramIterator(n, text, Locale.ENGLISH,
 						StopWords.English)) {
 					ngrams.note(ngram.toLowerCase(Locale.ENGLISH));
 				}
-				insertNGrams(ngrams, n, insertSql);
 			}
+			System.out.println("generated all ngrams " + ngrams.entrySet().size());
+			long insertstart = System.currentTimeMillis();
+			insertNGrams(ngrams, n, insertSql);
+			long inserttime = System.currentTimeMillis() - insertstart;
+			System.out.println("inserting ngrams took: " + (inserttime));
 		} catch (SQLException ex) {
 			ex.printStackTrace();
 		} finally {
@@ -65,6 +68,7 @@ public class NGramMaker {
 		String table_name = tablePrefix + "_" + n + "gram";
 		String table_sql = "CREATE TABLE IF NOT EXISTS " + table_name
 				+ " (#&# freq int, primary key (#*#))";
+		String drop_sql = "DROP TABLE IF EXISTS " + table_name; 
 		StringBuilder columns = new StringBuilder();
 		for (int i = 1; i <= n; i++) {
 			columns.append(BASE_WORD_COL);
@@ -106,8 +110,8 @@ public class NGramMaker {
 
 	private String prepareInsertSql(String tableName, int n) {
 		// This statement makes sure that values are only inserted once
-		String sql = "INSERT INTO " + tableName + " (#&#freq) VALUES (#*#?) "
-				+ "ON DUPLICATE KEY UPDATE freq = freq + ?";
+		String sql = "INSERT INTO " + tableName + " (#&#freq) VALUES (#*#?)";
+		// + "ON DUPLICATE KEY UPDATE freq = freq + ?";
 		// Set the correct column names
 		StringBuilder columns = new StringBuilder();
 		StringBuilder parameters = new StringBuilder();
@@ -135,6 +139,7 @@ public class NGramMaker {
 		PreparedStatement insertStatement;
 		try {
 			insertStatement = dbConnection.prepareStatement(sql);
+			dbConnection.setAutoCommit(false);
 		} catch (SQLException ex) {
 			ex.printStackTrace();
 			return;
@@ -149,16 +154,20 @@ public class NGramMaker {
 				// For the insert statement
 				insertStatement.setInt(n + 1, e.getValue());
 				// For the update statement
-				insertStatement.setInt(n + 2, e.getValue());
-
+				// insertStatement.setInt(n + 2, e.getValue());
 				// Execute the statements in small batches
 				insertStatement.addBatch();
-				if ((i + 1) % 100 == 0) {
+				if ((i + 1) % 10000 == 0) {
+					long startTime = System.currentTimeMillis();
 					insertStatement.executeBatch();
+					dbConnection.commit();
+					System.out.println("inserted " + i + " ngrams in "
+							+ (System.currentTimeMillis() - startTime) + " ms");
 				}
 				i++;
 			}
 			insertStatement.executeBatch();
+			dbConnection.commit();
 		} catch (SQLException ex) {
 			ex.printStackTrace();
 		} finally {
