@@ -67,7 +67,8 @@ public class NGramMaker {
 	private String prepareTable(String tablePrefix, int n) {
 		String table_name = tablePrefix + "_" + n + "gram";
 		String table_sql = "CREATE TABLE IF NOT EXISTS " + table_name
-				+ " (#&# freq int, primary key (#*#))";
+				+ " (#&# freq int)";
+			//, primary key (#*#))";
 		String drop_sql = "DROP TABLE IF EXISTS " + table_name; 
 		StringBuilder columns = new StringBuilder();
 		for (int i = 1; i <= n; i++) {
