@@ -14,10 +14,9 @@ public class Database {
 
 	public static Connection getConnection(String host, String username, String password) {
 		Connection connect = null;
-		String url = "jdbc:mysql://" + host + "/";
-		String dbName = "nano_tech";
+		String url = "jdbc:mysql://" + host + "/nano_tech?useServerPrepStmts=false&rewriteBatchedStatements=true";
 		try {
-			connect = (Connection) DriverManager.getConnection(url + dbName, username, password);
+			connect = (Connection) DriverManager.getConnection(url, username, password);
 			System.out.println("Connected to the database");
 		} catch (Exception e) {
 			e.printStackTrace();

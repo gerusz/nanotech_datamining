@@ -45,7 +45,7 @@ public class NGramMaker {
 			}
 			System.out.println("generated all ngrams " + ngrams.entrySet().size());
 			long insertstart = System.currentTimeMillis();
-			insertNGrams(ngrams, n, insertSql);
+			insertNGrams(ngrams, n, insertSql, tableName);
 			long inserttime = System.currentTimeMillis() - insertstart;
 			System.out.println("inserting ngrams took: " + (inserttime));
 		} catch (SQLException ex) {
@@ -92,6 +92,8 @@ public class NGramMaker {
 		}
 		PreparedStatement tableStatement = null;
 		try {
+			tableStatement = dbConnection.prepareStatement(drop_sql);
+			tableStatement.execute();
 			tableStatement = dbConnection.prepareStatement(table_sql);
 			tableStatement.execute();
 		} catch (SQLException ex) {
@@ -135,11 +137,15 @@ public class NGramMaker {
 	 * @param n The n of the n-gram
 	 * @param tablePrefix The prefix to give the table
 	 */
-	private void insertNGrams(final Counter<String> ngrams, int n, String sql) {
-		PreparedStatement insertStatement;
+	private void insertNGrams(final Counter<String> ngrams, int n, String sql, String table) {
+		PreparedStatement insertStatement = null;
+		Statement statement = null;
 		try {
 			insertStatement = dbConnection.prepareStatement(sql);
 			dbConnection.setAutoCommit(false);
+			statement = dbConnection.createStatement();
+			statement.execute("SET UNIQUE_CHECKS=0");
+			statement.execute("ALTER TABLE " + table + " DISABLE KEYS");
 		} catch (SQLException ex) {
 			ex.printStackTrace();
 			return;
@@ -168,6 +174,8 @@ public class NGramMaker {
 			}
 			insertStatement.executeBatch();
 			dbConnection.commit();
+			statement.execute("SET UNIQUE_CHECKS = 1; ");
+			statement.execute("ALTER TABLE " + table + " ENABLE KEYS");
 		} catch (SQLException ex) {
 			ex.printStackTrace();
 		} finally {
