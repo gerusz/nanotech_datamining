@@ -64,7 +64,7 @@ public class CountKeywords {
 
 	public Map<String, Integer> getKeywordsForCountry(String country)
 			throws SQLException, IOException {
-		return getKeywordsForT("'" + country + "'", COUNTRY_COLUMN, ";", LIKE);
+		return getKeywordsForT("'%" + country + "%'", COUNTRY_COLUMN, ";", LIKE);
 	}
 
 	private <T> Map<String, Integer> getKeywordsForT(T type, String columnName,
