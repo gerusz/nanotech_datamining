@@ -8,15 +8,12 @@ import java.sql.Statement;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.TreeMap;
 
 import org.tartarus.snowball.SnowballStemmer;
 import org.tartarus.snowball.ext.englishStemmer;
-import org.tartarus.snowball.ext.germanStemmer;
 
 import util.MapUtil;
-
 import db.Database;
 
 public class CountKeywords {
@@ -47,9 +44,11 @@ public class CountKeywords {
 	private static final String PUBLICATION_YEAR_COLUMN = "publication_year";
 	private static final String COUNTRY_COLUMN = "countries";
 	private static final String KEYWORD_PLUS_COLUMN = "keyword_plus";
+	private static final String JOURNAL_COLUMN = "journal";
 
 	private static final String EQUALS = "=";
 	private static final String LIKE = " LIKE ";
+
 
 
 	public CountKeywords(String dbHost, String dbUser, String dbPass) {
@@ -65,6 +64,11 @@ public class CountKeywords {
 	public Map<String, Integer> getKeywordsForCountry(String country)
 			throws SQLException, IOException {
 		return getKeywordsForT("'%" + country + "%'", COUNTRY_COLUMN, ";", LIKE);
+	}
+	
+	public Map<String, Integer> getKeywordsForJournal(String journal)
+			throws SQLException, IOException {
+		return getKeywordsForT("'%" + journal + "%'", JOURNAL_COLUMN, ";", LIKE);
 	}
 
 	private <T> Map<String, Integer> getKeywordsForT(T type, String columnName,
@@ -136,8 +140,11 @@ public class CountKeywords {
 		Map<String, Integer> keywordsForYear = countKeywords
 				.getKeywordsForYear(1999);
 		Map<String, Integer> keywordsForCountry = countKeywords
-				.getKeywordsForCountry("Vatican");
+				.getKeywordsForCountry("Netherlands");
+		System.out.println("Year 1999");
 		MapUtil.printFirstXEntriesFromMap(keywordsForYear, 10);
+		System.out.println("Country Netherlands");
+		MapUtil.printFirstXEntriesFromMap(keywordsForCountry, 10);
 	}
 
 }
