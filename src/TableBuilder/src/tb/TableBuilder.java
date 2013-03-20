@@ -30,6 +30,7 @@ public class TableBuilder {
 		int colToRow;
 		int colToColumn;
 		int colToData;
+		boolean dataIsFraction = false;
 		
 		host = "";
 		user = "";
@@ -121,6 +122,8 @@ public class TableBuilder {
 			
 			System.out.println("Which column should be turned into rows?");
 			
+			System.out.println("[0]Single row");
+			
 			for(int i=0; i<columns.size(); i++) {
 				System.out.println("[" + Integer.toString(i+1) + "]" + columns.elementAt(i));
 			}
@@ -134,6 +137,8 @@ public class TableBuilder {
 			}
 			
 			System.out.println("Which column should be turned into columns?");
+			
+			System.out.println("[0]Single column");
 			
 			for(int i=0; i<columns.size(); i++) {
 				System.out.println("[" + Integer.toString(i+1) + "]" + columns.elementAt(i));
@@ -161,24 +166,47 @@ public class TableBuilder {
 				
 			}
 			
+			System.out.println("Data type? (F: fraction, I: integer)");
+			
+			try {
+				BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+				String dTypeString = bufferRead.readLine();
+				if(dTypeString.equalsIgnoreCase("f")) {
+					dataIsFraction = true;
+				}
+			}
+			catch(IOException ex) {
+				
+			}
+			
 			Vector<String> tableRows = new Vector<String>();
 			Vector<String> tableCols = new Vector<String>();
-			HashMap<String, HashMap<String, Integer>> dataTable = new HashMap<String, HashMap<String, Integer>>();
+			HashMap<String, HashMap<String, Number>> dataTable = new HashMap<String, HashMap<String, Number>>();
 			
 			while(selectResults.next()) {
-				String row = selectResults.getString(colToRow);
+				String row = "Data";
+				if(colToRow != 0) {
+					row = selectResults.getString(colToRow);
+				}
 				if(!tableRows.contains(row)) {
-					HashMap<String, Integer> tmp = new HashMap<String, Integer>();
+					HashMap<String, Number> tmp = new HashMap<String, Number>();
 					dataTable.put(row, tmp);
 					tableRows.add(row);
 				}
 				
-				String col = selectResults.getString(colToColumn);
+				String col = "Data";
+				if(colToColumn != 0) {
+					col = selectResults.getString(colToColumn);
+				}
 				if(!tableCols.contains(col)) {
 					tableCols.add(col);
 				}
-				
-				dataTable.get(row).put(col, selectResults.getInt(colToData));
+				if(dataIsFraction) {
+					dataTable.get(row).put(col, selectResults.getDouble(colToData));
+				}
+				else {
+					dataTable.get(row).put(col, selectResults.getInt(colToData));
+				}
 			}
 						
 			
@@ -234,11 +262,16 @@ public class TableBuilder {
 			for(int row = 0; row < tableRows.size(); row++) {
 				String rowName = tableRows.elementAt(row);
 				writer.write("\"" + rowName + "\",");
-				HashMap<String, Integer> rowData = dataTable.get(rowName);
+				HashMap<String, Number> rowData = dataTable.get(rowName);
 				for(int col = 0; col < tableCols.size(); col++) {
 					String colName = tableCols.elementAt(col);
 					if(rowData.containsKey(colName)) {
-						writer.write(Integer.toString(rowData.get(colName)));
+						if(dataIsFraction) {
+							writer.write(Double.toString(rowData.get(colName).doubleValue()));
+						}
+						else {
+							writer.write(Integer.toString(rowData.get(colName).intValue()));
+						}
 					}
 					else { 
 						writer.write("0");
