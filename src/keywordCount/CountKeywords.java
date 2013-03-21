@@ -70,6 +70,11 @@ public class CountKeywords {
 			throws SQLException, IOException {
 		return getKeywordsForT("'%" + journal + "%'", JOURNAL_COLUMN, ";", LIKE);
 	}
+	
+	public Map<String, Integer> getAllKeywords() throws SQLException, IOException {
+		// using a small "hack"
+		return getKeywordsForT("1", "1", ";", "=");
+	}
 
 	private <T> Map<String, Integer> getKeywordsForT(T type, String columnName,
 			String splitRegex, String whereComparator) throws SQLException,
