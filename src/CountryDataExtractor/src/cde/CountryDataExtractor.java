@@ -204,8 +204,7 @@ public class CountryDataExtractor {
 			
 			Connection connect = DriverManager.getConnection("jdbc:mysql://"+host+"/"+dbName+"?"
 			              + "user="+user+"&password="+pass);
-			//Statement tableRecreateStatement = connect.createStatement();
-			System.out.println("If the destination table doesn't exist, run this query:");
+			Statement tableRecreateStatement = connect.createStatement();
 			String tableRecreateQuery = "DROP TABLE IF EXISTS `"+dbName+"`.`"+destinationTable+"`;\n"+
 			"CREATE  TABLE `"+dbName+"`.`"+destinationTable+"` (\n"+
 			"`"+outputUniqueIdName+"` INT(11) NULL ,\n"+
@@ -217,16 +216,21 @@ public class CountryDataExtractor {
     		"REFERENCES `"+sourceTable+"` (`"+uniqueIdName+"` )\n" +
     		"ON DELETE CASCADE\n" +
     		"ON UPDATE CASCADE);";
-			System.out.println(tableRecreateQuery);
-			//tableRecreateStatement.executeUpdate(tableRecreateQuery);
 			
-			System.out.println("Type something and press enter to continue");
 			try {
-				BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
-				bufferRead.readLine();
+				tableRecreateStatement.executeUpdate(tableRecreateQuery);
 			}
-			catch(IOException ex) {
-				
+			catch(SQLException ex) {
+				System.out.println("Couldn't create destination table. Run this command in the workbench:");
+				System.out.println(tableRecreateQuery);
+				System.out.println("Type something and press enter to continue");
+				try {
+					BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+					bufferRead.readLine();
+				}
+				catch(IOException exc) {
+					
+				}
 			}
 			
 			System.out.println("Selecting "+columnToSeparate+" values...");
