@@ -31,6 +31,7 @@ public class TableBuilder {
 		int colToColumn;
 		int colToData;
 		boolean dataIsFraction = false;
+		boolean dataIsString = false;
 		
 		host = "";
 		user = "";
@@ -166,13 +167,16 @@ public class TableBuilder {
 				
 			}
 			
-			System.out.println("Data type? (F: fraction, I: integer)");
+			System.out.println("Data type? (F: fraction, I: integer, S: string)");
 			
 			try {
 				BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
 				String dTypeString = bufferRead.readLine();
 				if(dTypeString.equalsIgnoreCase("f")) {
 					dataIsFraction = true;
+				}
+				else if(dTypeString.equalsIgnoreCase("s")) {
+					dataIsString = true;
 				}
 			}
 			catch(IOException ex) {
@@ -181,7 +185,7 @@ public class TableBuilder {
 			
 			Vector<String> tableRows = new Vector<String>();
 			Vector<String> tableCols = new Vector<String>();
-			HashMap<String, HashMap<String, Number>> dataTable = new HashMap<String, HashMap<String, Number>>();
+			HashMap<String, HashMap<String, Object>> dataTable = new HashMap<String, HashMap<String, Object>>();
 			
 			while(selectResults.next()) {
 				String row = "Data";
@@ -189,7 +193,7 @@ public class TableBuilder {
 					row = selectResults.getString(colToRow);
 				}
 				if(!tableRows.contains(row)) {
-					HashMap<String, Number> tmp = new HashMap<String, Number>();
+					HashMap<String, Object> tmp = new HashMap<String, Object>();
 					dataTable.put(row, tmp);
 					tableRows.add(row);
 				}
@@ -203,6 +207,9 @@ public class TableBuilder {
 				}
 				if(dataIsFraction) {
 					dataTable.get(row).put(col, selectResults.getDouble(colToData));
+				}
+				else if(dataIsString) {
+					dataTable.get(row).put(col,  selectResults.getString(colToData));
 				}
 				else {
 					dataTable.get(row).put(col, selectResults.getInt(colToData));
@@ -262,15 +269,18 @@ public class TableBuilder {
 			for(int row = 0; row < tableRows.size(); row++) {
 				String rowName = tableRows.elementAt(row);
 				writer.write("\"" + rowName + "\",");
-				HashMap<String, Number> rowData = dataTable.get(rowName);
+				HashMap<String, Object> rowData = dataTable.get(rowName);
 				for(int col = 0; col < tableCols.size(); col++) {
 					String colName = tableCols.elementAt(col);
 					if(rowData.containsKey(colName)) {
 						if(dataIsFraction) {
-							writer.write(Double.toString(rowData.get(colName).doubleValue()));
+							writer.write(Double.toString(((Number)rowData.get(colName)).doubleValue()));
+						}
+						else if(dataIsString) {
+							writer.write((String)rowData.get(colName));
 						}
 						else {
-							writer.write(Integer.toString(rowData.get(colName).intValue()));
+							writer.write(Integer.toString(((Number)rowData.get(colName)).intValue()));
 						}
 					}
 					else { 

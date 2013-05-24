@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Vector;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -44,6 +45,8 @@ public class CountryDataExtractor {
 		String separatorString;
 		String outputUniqueIdName;
 		String outputSeparatedColumnName;
+		String filter;
+		HashSet<String> filterWords;
 		
 		host = "";
 		user = "";
@@ -56,6 +59,8 @@ public class CountryDataExtractor {
 		separatorString = "";
 		outputUniqueIdName = "";
 		outputSeparatedColumnName = "";
+		filter = "";
+		filterWords = null;
 		
 		for(int i=0; i<args.length; i++) {
 			if(i<args.length-1) {
@@ -199,14 +204,33 @@ public class CountryDataExtractor {
 			}
 		}
 		
+		if(filter.isEmpty()) {
+			System.out.println("Filter? (separate with comma, type no for empty)");
+			try {
+				BufferedReader bufferRead = new BufferedReader(new InputStreamReader(System.in));
+				filter = bufferRead.readLine();
+			}
+			catch(IOException ex) {
+				
+			}
+			if(!filter.equalsIgnoreCase("no")) {
+				filterWords = new HashSet<String>();
+				String[] fwArray = filter.split(",");
+				for(int i=0; i<fwArray.length; i++) {
+					filterWords.add(fwArray[i].trim());
+				}
+				System.out.printf("%d filter words\n", filterWords.size());
+			}
+		}
+		
 		try {
 			Class.forName("com.mysql.jdbc.Driver");
 			
 			Connection connect = DriverManager.getConnection("jdbc:mysql://"+host+"/"+dbName+"?"
 			              + "user="+user+"&password="+pass);
 			Statement tableRecreateStatement = connect.createStatement();
-			String tableRecreateQuery = "DROP TABLE IF EXISTS `"+dbName+"`.`"+destinationTable+"`;\n"+
-			"CREATE  TABLE `"+dbName+"`.`"+destinationTable+"` (\n"+
+			String tableDropQuery = "DROP TABLE IF EXISTS `"+dbName+"`.`"+destinationTable+"`;";
+			String tableRecreateQuery = "CREATE  TABLE `"+dbName+"`.`"+destinationTable+"` (\n"+
 			"`"+outputUniqueIdName+"` INT(11) NULL ,\n"+
   			"`"+outputSeparatedColumnName+"` VARCHAR(64) NOT NULL ,\n"+
   			"INDEX `"+outputUniqueIdName+"_idx` (`"+outputUniqueIdName+"` ASC) ,\n"+
@@ -218,10 +242,12 @@ public class CountryDataExtractor {
     		"ON UPDATE CASCADE);";
 			
 			try {
+				tableRecreateStatement.executeUpdate(tableDropQuery);
 				tableRecreateStatement.executeUpdate(tableRecreateQuery);
 			}
 			catch(SQLException ex) {
 				System.out.println("Couldn't create destination table. Run this command in the workbench:");
+				System.out.println(tableDropQuery);
 				System.out.println(tableRecreateQuery);
 				System.out.println("Type something and press enter to continue");
 				try {
@@ -249,7 +275,7 @@ public class CountryDataExtractor {
 				String[] countriesInRow = countriesRow.split(separatorString);
 				for(int i=0; i<countriesInRow.length; i++) {
 					countriesInRow[i] = countriesInRow[i].trim();
-					if(countriesInRow[i].length() > 0 && !separateMap.containsKey(countriesInRow[i])) {
+					if(countriesInRow[i].length() > 0 && !separateMap.containsKey(countriesInRow[i]) && (filterWords == null || filterWords.contains(countriesInRow[i]))) {
 						Vector<Integer> dummyVector = new Vector<Integer>();
 						separateMap.put(countriesInRow[i], dummyVector);
 					}
@@ -311,7 +337,7 @@ public class CountryDataExtractor {
 					int id = rows.getInt(1);
 					for(int i=0; i<separated.length; i++) {
 						String keyword = separated[i].trim();
-						if(keyword != null && !keyword.isEmpty()) {
+						if(keyword != null && !keyword.isEmpty() && (filterWords == null || filterWords.contains(keyword))) {
 							separateMap.get(keyword).add(id);
 						}
 					}
@@ -357,9 +383,7 @@ public class CountryDataExtractor {
 			int totalRows = 0;
 			
 			for(String separated: separateMap.keySet()) {
-				for(Integer id: separateMap.get(separated)) {
-					totalRows++;
-				}
+				totalRows += separateMap.get(separated).size();
 			}
 			
 			for(String separated: separateMap.keySet()) {
