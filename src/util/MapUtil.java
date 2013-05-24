@@ -1,7 +1,9 @@
 package util;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MapUtil {
@@ -36,9 +38,15 @@ public class MapUtil {
 		}
 	}
 	
+	public static <K> void removeEntries(Map<K, Integer> map, Set<K> toRemove) {
+		for(K k : toRemove) {
+			map.remove(k);
+		}
+	}
+	
 	public static <K> void plusAtIndex(Map<K, Integer> map, K key, int value) {
 		Integer i = 0;
-		if(map.containsKey(map)) {
+		if(map.containsKey(key)) {
 			i = map.get(key);
 		}
 		i += value;
@@ -87,5 +95,16 @@ public class MapUtil {
 		};
 		
 		doit.doTheJob();
+	}
+
+	public static <K> Set<K> getEntriesSmallerThan(
+			Map<K, Integer> map, int value) {
+		Set<K> toRemove = new HashSet<>();
+		for(Map.Entry<K, Integer> e : map.entrySet()) {
+			if(e.getValue() < value) {
+				toRemove.add(e.getKey());
+			}
+		}
+		return toRemove;
 	}
 }

@@ -10,9 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.tartarus.snowball.SnowballStemmer;
-import org.tartarus.snowball.ext.englishStemmer;
-
 import util.MapUtil;
 import db.Database;
 
@@ -39,8 +36,6 @@ public class CountKeywords {
 
 	private Connection selectConnection;
 
-	private SnowballStemmer stemmer;
-
 	private static final String PUBLICATION_YEAR_COLUMN = "publication_year";
 	private static final String COUNTRY_COLUMN = "countries";
 	private static final String KEYWORD_PLUS_COLUMN = "keyword_plus";
@@ -48,17 +43,22 @@ public class CountKeywords {
 
 	private static final String EQUALS = "=";
 	private static final String LIKE = " LIKE ";
+	private static final String BETWEEN = " BETWEEN ";
 
 
 
 	public CountKeywords(String dbHost, String dbUser, String dbPass) {
 		selectConnection = Database.getConnection(dbHost, dbUser, dbPass);
-		stemmer = new englishStemmer();
 	}
 
 	public Map<String, Integer> getKeywordsForYear(int year)
 			throws SQLException, IOException {
 		return getKeywordsForT(year, PUBLICATION_YEAR_COLUMN, ";", EQUALS);
+	}
+	
+	public Map<String, Integer> getKeywordsForYears(int start, int end)
+			throws SQLException, IOException {
+		return getKeywordsForT(start + " and " + end, PUBLICATION_YEAR_COLUMN, ";", BETWEEN);
 	}
 
 	public Map<String, Integer> getKeywordsForCountry(String country)
@@ -93,10 +93,10 @@ public class CountKeywords {
 		final int KEYWORD_PLUS = 1;
 		// only select the count using group by for the rare case, that the same
 		// keywords appears in the same order in #count different entries
-		final int COUNT = 2;
+//		final int COUNT = 2;
 		statement
-				.execute("SELECT " + KEYWORD_PLUS_COLUMN + ", COUNT(*) FROM tbl_articles WHERE "
-						+ where + " GROUP BY " + KEYWORD_PLUS_COLUMN);
+				.execute("SELECT " + KEYWORD_PLUS_COLUMN + " FROM tbl_articles WHERE "
+						+ where);
 		ResultSet resultSet = statement.getResultSet();
 		Map<String, Integer> countMap = new HashMap<String, Integer>();
 		int processed = 0;
@@ -107,7 +107,7 @@ public class CountKeywords {
 			// get the keyword list
 			String keywordList = resultSet.getString(KEYWORD_PLUS);
 			// get the count
-			int count = resultSet.getInt(COUNT);
+//			int count = resultSet.getInt(COUNT);
 			// get the keywords
 			String[] keywords = keywordList.split(splitRegex);
 			for (String keyword : keywords) {
@@ -115,11 +115,11 @@ public class CountKeywords {
 				// stem the keyword
 				keyword = stem(keyword);
 				// update/add the count to the map
-				Integer oldCount = countMap.get(keyword);
-				if (oldCount == null) {
-					oldCount = 0;
+				Integer count = countMap.get(keyword);
+				if (count == null) {
+					count = 0;
 				}
-				oldCount += count;
+				count += 1;
 				countMap.put(keyword, count);
 			}
 			++processed;
@@ -135,9 +135,10 @@ public class CountKeywords {
 	private String stem(String keyword) {
 		// TODO keyword can be a set of words. Stemming will probably not work
 		// then, because it expects only one word as an argument.
-		stemmer.setCurrent(keyword);
-		stemmer.stem();
-		return stemmer.getCurrent();
+//		stemmer.setCurrent(keyword);
+//		stemmer.stem();
+//		return stemmer.getCurrent();
+		return keyword.trim();
 	}
 
 	public static void main(String[] args) throws SQLException, IOException {
@@ -146,7 +147,7 @@ public class CountKeywords {
 				.getKeywordsForYear(1999);
 		Map<String, Integer> keywordsForCountry = countKeywords
 				.getKeywordsForCountry("Netherlands");
-		System.out.println("Year 1999");
+		System.out.println("Year 1998");
 		MapUtil.printFirstXEntriesFromMap(keywordsForYear, 10);
 		System.out.println("Country Netherlands");
 		MapUtil.printFirstXEntriesFromMap(keywordsForCountry, 10);

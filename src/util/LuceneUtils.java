@@ -8,7 +8,10 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.Version;
+import org.tartarus.snowball.ext.EnglishStemmer;
 
 public final class LuceneUtils {
 	protected static abstract class SaveMethod<T> {
@@ -47,6 +50,13 @@ public final class LuceneUtils {
 		return parseKeywordsT(analyzer, text, saveMethod);
 	}
 	
+	public static String stem(String word) {
+		EnglishStemmer stemmer = new EnglishStemmer();
+		stemmer.setCurrent(word);
+		stemmer.stem();
+		return stemmer.getCurrent();
+	}
+	
 	public static void parseKeywordsAndFrequency(Analyzer analyzer, String text, Map<String, Integer> map) throws IOException {
 		SaveMethod<Map<String, Integer>> saveMethod = new SaveMethod<Map<String,Integer>>(map) {
 
@@ -79,6 +89,14 @@ public final class LuceneUtils {
 			stream.close();
 		}
 		return saveMethod.getT();
+	}
+
+	public static String change(String keyword) throws IOException {
+		List<String> list = LuceneUtils.parseKeywords(new EnglishAnalyzer(Version.LUCENE_41), keyword);
+		if(list.size() != 1) {
+			return null;
+		}
+		return list.get(0);
 	}
 	
 	

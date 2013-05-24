@@ -22,12 +22,16 @@ import keywordCount.CountKeywords;
  */
 public class CreateWordCloudData {
 	
-	public static String createWordCloudData(int wordFrequencyTreshold) throws SQLException, IOException {
+	public static interface KeywordCreator {
+		public Map<String, Integer> getKeywords(CountKeywords ck) throws SQLException, IOException;
+	}
+	
+	public static String createWordCloudData(int wordFrequencyTreshold, KeywordCreator keywordCreator) throws SQLException, IOException {
 		// TODO change
 		CountKeywords ck = new CountKeywords("localhost", "root", "");
-		Map<String, Integer> keywordsForCountry = ck.getAllKeywords();
+		Map<String, Integer> keywords = keywordCreator.getKeywords(ck);
 		StringBuilder wordCloudData = new StringBuilder();
-		for(Map.Entry<String, Integer> entry : keywordsForCountry.entrySet()) {
+		for(Map.Entry<String, Integer> entry : keywords.entrySet()) {
 			if(entry.getValue() > wordFrequencyTreshold) {
 				wordCloudData.append(entry.getKey()).append(":").append(entry.getValue()).append("\n");
 			}
@@ -37,7 +41,13 @@ public class CreateWordCloudData {
 	
 	public static void main(String[] args) throws IOException, SQLException {
 		FileWriter writer = new FileWriter(new File("output\\wordCloudData.txt"));
-		writer.write(createWordCloudData(3));
+		writer.write(createWordCloudData(30, new KeywordCreator() {
+			
+			@Override
+			public Map<String, Integer> getKeywords(CountKeywords ck) throws SQLException, IOException {
+				return ck.getKeywordsForJournal("APPL SURF SCI");
+			}
+		}));
 		writer.close();
 	}
 	
