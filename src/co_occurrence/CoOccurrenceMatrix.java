@@ -1,18 +1,12 @@
 package co_occurrence;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -20,12 +14,10 @@ import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.ejml.data.DenseMatrix64F;
 import org.ejml.ops.CommonOps;
 
-import au.com.bytecode.opencsv.CSVWriter;
-
 import util.LuceneUtils;
 import util.MapUtil;
 import util.Util;
-
+import au.com.bytecode.opencsv.CSVWriter;
 import db.Database;
 
 public class CoOccurrenceMatrix {

@@ -2,7 +2,6 @@ package lucene;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Reader;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,24 +11,17 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.LetterTokenizer;
-import org.apache.lucene.analysis.core.LetterTokenizerFactory;
 import org.apache.lucene.analysis.miscellaneous.PatternAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.util.CharTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.document.FieldType.NumericType;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
-
-import com.sun.org.apache.bcel.internal.generic.GETSTATIC;
 
 import db.Database;
 
