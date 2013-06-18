@@ -47,6 +47,7 @@ public class CountryDataExtractor {
 		String outputSeparatedColumnName;
 		String filter;
 		HashSet<String> filterWords;
+		Vector<String> filterRegexs;
 		
 		host = "";
 		user = "";
@@ -61,6 +62,7 @@ public class CountryDataExtractor {
 		outputSeparatedColumnName = "";
 		filter = "";
 		filterWords = null;
+		filterRegexs = null;
 		
 		for(int i=0; i<args.length; i++) {
 			if(i<args.length-1) {
@@ -215,9 +217,15 @@ public class CountryDataExtractor {
 			}
 			if(!filter.equalsIgnoreCase("no")) {
 				filterWords = new HashSet<String>();
+				filterRegexs = new Vector<String>();
 				String[] fwArray = filter.split(",");
 				for(int i=0; i<fwArray.length; i++) {
-					filterWords.add(fwArray[i].trim());
+					if(fwArray[i].trim().startsWith("/") && fwArray[i].trim().endsWith("/")) {
+						filterRegexs.add(fwArray[i].trim());
+					}
+					else {
+						filterWords.add(fwArray[i].trim());
+					}
 				}
 				System.out.printf("%d filter words\n", filterWords.size());
 			}
@@ -232,14 +240,15 @@ public class CountryDataExtractor {
 			String tableDropQuery = "DROP TABLE IF EXISTS `"+dbName+"`.`"+destinationTable+"`;";
 			String tableRecreateQuery = "CREATE  TABLE `"+dbName+"`.`"+destinationTable+"` (\n"+
 			"`"+outputUniqueIdName+"` INT(11) NULL ,\n"+
-  			"`"+outputSeparatedColumnName+"` VARCHAR(64) NOT NULL ,\n"+
+  			"`"+outputSeparatedColumnName+"` VARCHAR(128) NOT NULL ,\n"+
   			"INDEX `"+outputUniqueIdName+"_idx` (`"+outputUniqueIdName+"` ASC) ,\n"+
-  			"INDEX `"+outputSeparatedColumnName+"_index` (`"+outputSeparatedColumnName+"` ASC) ,\n"+
   			"CONSTRAINT `"+outputUniqueIdName+"_"+destinationTable+"_constraint`\n"+
     		"FOREIGN KEY (`"+outputUniqueIdName+"` )\n" +
     		"REFERENCES `"+sourceTable+"` (`"+uniqueIdName+"` )\n" +
     		"ON DELETE CASCADE\n" +
     		"ON UPDATE CASCADE);";
+			String indexCreateQuery = "ALTER TABLE `"+dbName+"`.`"+destinationTable+"` " +
+			"ADD INDEX `"+outputSeparatedColumnName+"_index` (`"+outputSeparatedColumnName+"` ASC)";
 			
 			try {
 				tableRecreateStatement.executeUpdate(tableDropQuery);
@@ -275,8 +284,16 @@ public class CountryDataExtractor {
 				String[] countriesInRow = countriesRow.split(separatorString);
 				for(int i=0; i<countriesInRow.length; i++) {
 					countriesInRow[i] = countriesInRow[i].trim();
-					if(countriesInRow[i].length() > 0 && !separateMap.containsKey(countriesInRow[i]) && (filterWords == null || filterWords.contains(countriesInRow[i]))) {
-						Vector<Integer> dummyVector = new Vector<Integer>();
+					boolean matchesFilterWord = (filterWords == null || filterWords.contains(countriesInRow[i]));
+					boolean matchesRegex = false;
+					if(filterRegexs != null) {
+						for(String rx : filterRegexs) {
+							matchesRegex = (matchesRegex || countriesInRow[i].matches(rx));
+							if(matchesRegex) break;
+						}
+					}
+					if(countriesInRow[i].length() > 0 && !separateMap.containsKey(countriesInRow[i]) && (matchesFilterWord || matchesRegex) ) {
+						Vector<Integer> dummyVector = new Vector<Integer>(5, 1);
 						separateMap.put(countriesInRow[i], dummyVector);
 					}
 				}
@@ -436,6 +453,16 @@ public class CountryDataExtractor {
 				ex.printStackTrace();
 			}
 			importStatement.close();
+			
+			try {
+				tableRecreateStatement.executeUpdate(indexCreateQuery);
+			}
+			catch (SQLException ex) {
+				System.out.println("Couldn't create index");
+				System.out.println("If you want to create an index, run the following query: ");
+				System.out.println(indexCreateQuery);
+			}
+			
 			
 			connect.close();
 			System.out.println("Done.");
